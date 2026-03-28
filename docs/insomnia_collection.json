@@ -82,7 +82,8 @@
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"email\": \"rodrigo@test.com\",\n  \"password\": \"senha1234\"\n}"
-      }
+      },
+      "afterResponseScript": "const res = await insomnia.response.json();\nif (res.access_token) {\n  await insomnia.environment.set('access_token', res.access_token);\n}\nif (res.refresh_token) {\n  await insomnia.environment.set('refresh_token', res.refresh_token);\n}"
     },
     {
       "_id": "req_refresh",
@@ -97,7 +98,8 @@
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"refresh_token\": \"{{ _.refresh_token }}\"\n}"
-      }
+      },
+      "afterResponseScript": "const res = await insomnia.response.json();\nif (res.access_token) {\n  await insomnia.environment.set('access_token', res.access_token);\n}"
     },
 
     {

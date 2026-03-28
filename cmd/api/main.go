@@ -14,6 +14,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/rubendubeux/inventory-manager/internal/auth"
+	"github.com/rubendubeux/inventory-manager/internal/campaign"
 	"github.com/rubendubeux/inventory-manager/internal/db"
 	"github.com/rubendubeux/inventory-manager/pkg/middleware"
 )
@@ -48,6 +49,11 @@ func main() {
 	})
 	authHandler := auth.NewHandler(authSvc)
 
+	// Campaign
+	campaignRepo := campaign.NewRepository(pool)
+	campaignSvc := campaign.NewService(campaignRepo)
+	campaignHandler := campaign.NewHandler(campaignSvc)
+
 	r := chi.NewRouter()
 	r.Use(chiMiddleware.Logger)
 	r.Use(chiMiddleware.Recoverer)
@@ -58,10 +64,28 @@ func main() {
 	r.Post("/auth/login", authHandler.Login)
 	r.Post("/auth/refresh", authHandler.Refresh)
 
-	// Grupo protegido — próximas fases adicionam rotas aqui
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.Authenticate(jwtSecret))
-		// rotas protegidas
+
+		r.Post("/campaigns", campaignHandler.Create)
+		r.Get("/campaigns", campaignHandler.List)
+
+		r.Post("/campaigns/join", campaignHandler.JoinByCode)
+
+		r.Route("/campaigns/{campaignID}", func(r chi.Router) {
+			r.Use(middleware.RequireCampaignRole(pool, "player"))
+
+			r.Get("/", campaignHandler.Get)
+			r.Put("/", campaignHandler.Update)
+			r.Delete("/", campaignHandler.Delete)
+
+			r.Get("/members", campaignHandler.ListMembers)
+			r.Post("/members", campaignHandler.AddMember)
+			r.Put("/members/{userID}", campaignHandler.UpdateMember)
+			r.Delete("/members/{userID}", campaignHandler.RemoveMember)
+
+			r.Post("/invites", campaignHandler.CreateInvite)
+		})
 	})
 
 	log.Printf("server listening on :%s", port)
@@ -73,13 +97,11 @@ func main() {
 func healthHandler(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-
 		if err := pool.Ping(context.Background()); err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			json.NewEncoder(w).Encode(map[string]string{"status": "error", "db": "unreachable"})
 			return
 		}
-
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok", "db": "connected"})
 	}
 }
