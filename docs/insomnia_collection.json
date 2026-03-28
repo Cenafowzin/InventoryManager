@@ -1,0 +1,965 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-03-27",
+  "__export_source": "insomnia.desktop.app",
+  "resources": [
+    {
+      "_id": "wrk_rpginventory",
+      "_type": "workspace",
+      "name": "RPG Inventory Manager",
+      "description": "API de gerenciamento de inventário para RPG"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_rpginventory",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "access_token": "",
+        "refresh_token": "",
+        "campaign_id": "",
+        "character_id": "",
+        "item_id": "",
+        "coin_id": "",
+        "storage_id": "",
+        "category_id": "",
+        "shop_item_id": "",
+        "transaction_id": "",
+        "user_id": ""
+      }
+    },
+
+    {
+      "_id": "fld_health",
+      "_type": "request_group",
+      "parentId": "wrk_rpginventory",
+      "name": "🏥 Health"
+    },
+    {
+      "_id": "req_health",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "Health Check",
+      "method": "GET",
+      "url": "{{ _.base_url }}/health",
+      "headers": [],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_rpginventory",
+      "name": "🔐 Auth"
+    },
+    {
+      "_id": "req_register",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Register",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/register",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"username\": \"rodrigo\",\n  \"email\": \"rodrigo@test.com\",\n  \"password\": \"senha1234\"\n}"
+      }
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Login",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"rodrigo@test.com\",\n  \"password\": \"senha1234\"\n}"
+      }
+    },
+    {
+      "_id": "req_refresh",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Refresh Token",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/refresh",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refresh_token\": \"{{ _.refresh_token }}\"\n}"
+      }
+    },
+
+    {
+      "_id": "fld_campaigns",
+      "_type": "request_group",
+      "parentId": "wrk_rpginventory",
+      "name": "⚔️ Campaigns"
+    },
+    {
+      "_id": "req_campaign_create",
+      "_type": "request",
+      "parentId": "fld_campaigns",
+      "name": "Create Campaign",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"A Maldição do Liche\",\n  \"description\": \"Campanha de terror gótico\"\n}"
+      }
+    },
+    {
+      "_id": "req_campaign_list",
+      "_type": "request",
+      "parentId": "fld_campaigns",
+      "name": "List My Campaigns",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_campaign_get",
+      "_type": "request",
+      "parentId": "fld_campaigns",
+      "name": "Get Campaign",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_campaign_update",
+      "_type": "request",
+      "parentId": "fld_campaigns",
+      "name": "Update Campaign",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"A Maldição do Liche — Temporada 2\",\n  \"description\": \"Descrição atualizada\"\n}"
+      }
+    },
+    {
+      "_id": "req_campaign_delete",
+      "_type": "request",
+      "parentId": "fld_campaigns",
+      "name": "Delete Campaign",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_member_list",
+      "_type": "request",
+      "parentId": "fld_campaigns",
+      "name": "List Members",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/members",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_member_add",
+      "_type": "request",
+      "parentId": "fld_campaigns",
+      "name": "Add Member",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/members",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"user_id\": \"{{ _.user_id }}\",\n  \"role\": \"player\"\n}"
+      }
+    },
+    {
+      "_id": "req_member_update",
+      "_type": "request",
+      "parentId": "fld_campaigns",
+      "name": "Update Member Role",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/members/{{ _.user_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"role\": \"gm\"\n}"
+      }
+    },
+    {
+      "_id": "req_member_remove",
+      "_type": "request",
+      "parentId": "fld_campaigns",
+      "name": "Remove Member",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/members/{{ _.user_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_coins",
+      "_type": "request_group",
+      "parentId": "wrk_rpginventory",
+      "name": "🪙 Coins"
+    },
+    {
+      "_id": "req_coin_create",
+      "_type": "request",
+      "parentId": "fld_coins",
+      "name": "Create Coin Type",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/coins",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Ouro\",\n  \"abbreviation\": \"GP\",\n  \"emoji\": \"🪙\"\n}"
+      }
+    },
+    {
+      "_id": "req_coin_list",
+      "_type": "request",
+      "parentId": "fld_coins",
+      "name": "List Coin Types",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/coins",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_coin_update",
+      "_type": "request",
+      "parentId": "fld_coins",
+      "name": "Update Coin Type",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/coins/{{ _.coin_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Ouro Élfico\",\n  \"abbreviation\": \"GP\",\n  \"emoji\": \"✨\"\n}"
+      }
+    },
+    {
+      "_id": "req_coin_set_default",
+      "_type": "request",
+      "parentId": "fld_coins",
+      "name": "Set Default Coin",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/coins/{{ _.coin_id }}/set-default",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_coin_delete",
+      "_type": "request",
+      "parentId": "fld_coins",
+      "name": "Delete Coin Type",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/coins/{{ _.coin_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_conversion_create",
+      "_type": "request",
+      "parentId": "fld_coins",
+      "name": "Create Conversion (GP → SP = 10)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/coins/conversions",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"from_coin_id\": \"{{ _.coin_id }}\",\n  \"to_coin_id\": \"PREENCHA_SP_ID\",\n  \"rate\": 10\n}"
+      }
+    },
+    {
+      "_id": "req_conversion_list",
+      "_type": "request",
+      "parentId": "fld_coins",
+      "name": "List Conversions",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/coins/conversions",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_conversion_delete",
+      "_type": "request",
+      "parentId": "fld_coins",
+      "name": "Delete Conversion",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/coins/conversions/CONVERSION_ID",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_categories",
+      "_type": "request_group",
+      "parentId": "wrk_rpginventory",
+      "name": "🏷️ Categories"
+    },
+    {
+      "_id": "req_category_create",
+      "_type": "request",
+      "parentId": "fld_categories",
+      "name": "Create Category",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/categories",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Arma\",\n  \"color\": \"#E74C3C\"\n}"
+      }
+    },
+    {
+      "_id": "req_category_list",
+      "_type": "request",
+      "parentId": "fld_categories",
+      "name": "List Categories",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/categories",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_category_update",
+      "_type": "request",
+      "parentId": "fld_categories",
+      "name": "Update Category",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/categories/{{ _.category_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Arma Mágica\",\n  \"color\": \"#9B59B6\"\n}"
+      }
+    },
+    {
+      "_id": "req_category_delete",
+      "_type": "request",
+      "parentId": "fld_categories",
+      "name": "Delete Category",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/categories/{{ _.category_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_characters",
+      "_type": "request_group",
+      "parentId": "wrk_rpginventory",
+      "name": "🧙 Characters"
+    },
+    {
+      "_id": "req_character_create",
+      "_type": "request",
+      "parentId": "fld_characters",
+      "name": "Create Character",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Arathor, o Guerreiro\",\n  \"description\": \"Elfo ranger das montanhas\",\n  \"max_carry_weight_kg\": 50\n}"
+      }
+    },
+    {
+      "_id": "req_character_list",
+      "_type": "request",
+      "parentId": "fld_characters",
+      "name": "List Characters",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_character_get",
+      "_type": "request",
+      "parentId": "fld_characters",
+      "name": "Get Character",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_character_update",
+      "_type": "request",
+      "parentId": "fld_characters",
+      "name": "Update Character",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Arathor, o Lendário\",\n  \"description\": \"Elfo ranger lendário\",\n  \"max_carry_weight_kg\": 60\n}"
+      }
+    },
+    {
+      "_id": "req_character_delete",
+      "_type": "request",
+      "parentId": "fld_characters",
+      "name": "Delete Character",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_storages",
+      "_type": "request_group",
+      "parentId": "wrk_rpginventory",
+      "name": "🎒 Storage Spaces"
+    },
+    {
+      "_id": "req_storage_create",
+      "_type": "request",
+      "parentId": "fld_storages",
+      "name": "Create Storage Space",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/storages",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Mochila\",\n  \"description\": \"Mochila de couro resistente\",\n  \"counts_toward_load\": true,\n  \"capacity_kg\": 15\n}"
+      }
+    },
+    {
+      "_id": "req_storage_list",
+      "_type": "request",
+      "parentId": "fld_storages",
+      "name": "List Storage Spaces",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/storages",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_storage_update",
+      "_type": "request",
+      "parentId": "fld_storages",
+      "name": "Update Storage Space",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/storages/{{ _.storage_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Mochila Reforçada\",\n  \"capacity_kg\": 20\n}"
+      }
+    },
+    {
+      "_id": "req_storage_delete",
+      "_type": "request",
+      "parentId": "fld_storages",
+      "name": "Delete Storage Space",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/storages/{{ _.storage_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_items",
+      "_type": "request_group",
+      "parentId": "wrk_rpginventory",
+      "name": "🗡️ Inventory — Items"
+    },
+    {
+      "_id": "req_item_create",
+      "_type": "request",
+      "parentId": "fld_items",
+      "name": "Add Item",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/items",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Espada Longa\",\n  \"description\": \"Espada de aço élfico\",\n  \"emoji\": \"⚔️\",\n  \"weight_kg\": 1.5,\n  \"value\": 100,\n  \"storage_space_id\": \"{{ _.storage_id }}\",\n  \"category_ids\": [\"{{ _.category_id }}\"],\n  \"quantity\": 1\n}"
+      }
+    },
+    {
+      "_id": "req_item_create_lbs",
+      "_type": "request",
+      "parentId": "fld_items",
+      "name": "Add Item (peso em lbs)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/items",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Armadura de Couro\",\n  \"emoji\": \"🛡️\",\n  \"weight_kg\": 15,\n  \"weight_unit\": \"lbs\",\n  \"value\": 50,\n  \"quantity\": 1\n}"
+      }
+    },
+    {
+      "_id": "req_item_list",
+      "_type": "request",
+      "parentId": "fld_items",
+      "name": "List Items",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/items",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_item_list_by_category",
+      "_type": "request",
+      "parentId": "fld_items",
+      "name": "List Items (filtrar por categoria)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/items?category_id={{ _.category_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_item_list_by_storage",
+      "_type": "request",
+      "parentId": "fld_items",
+      "name": "List Items (filtrar por espaço)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/items?storage_id={{ _.storage_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_item_get",
+      "_type": "request",
+      "parentId": "fld_items",
+      "name": "Get Item",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/items/{{ _.item_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_item_update",
+      "_type": "request",
+      "parentId": "fld_items",
+      "name": "Update Item",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/items/{{ _.item_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Espada Longa +1\",\n  \"value\": 150,\n  \"category_ids\": [\"{{ _.category_id }}\"]\n}"
+      }
+    },
+    {
+      "_id": "req_item_delete",
+      "_type": "request",
+      "parentId": "fld_items",
+      "name": "Delete Item",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/items/{{ _.item_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_char_coins",
+      "_type": "request_group",
+      "parentId": "wrk_rpginventory",
+      "name": "💰 Inventory — Coins"
+    },
+    {
+      "_id": "req_purse_list",
+      "_type": "request",
+      "parentId": "fld_char_coins",
+      "name": "Get Coin Purse",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/coins",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_purse_set",
+      "_type": "request",
+      "parentId": "fld_char_coins",
+      "name": "Set Coin Balance",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/coins/{{ _.coin_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"amount\": 500\n}"
+      }
+    },
+    {
+      "_id": "req_purse_convert",
+      "_type": "request",
+      "parentId": "fld_char_coins",
+      "name": "Convert Coins",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/coins/convert",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"from_coin_id\": \"{{ _.coin_id }}\",\n  \"to_coin_id\": \"PREENCHA_TO_COIN_ID\",\n  \"amount\": 100\n}"
+      }
+    },
+
+    {
+      "_id": "fld_inventory",
+      "_type": "request_group",
+      "parentId": "wrk_rpginventory",
+      "name": "📦 Inventory — Summary"
+    },
+    {
+      "_id": "req_inventory_summary",
+      "_type": "request",
+      "parentId": "fld_inventory",
+      "name": "Full Inventory Summary",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/inventory",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_inventory_load",
+      "_type": "request",
+      "parentId": "fld_inventory",
+      "name": "Load Summary (por espaço)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/characters/{{ _.character_id }}/load",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_shop",
+      "_type": "request_group",
+      "parentId": "wrk_rpginventory",
+      "name": "🏪 Shop"
+    },
+    {
+      "_id": "req_shop_create",
+      "_type": "request",
+      "parentId": "fld_shop",
+      "name": "Create Shop Item",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/shop",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Poção de Cura\",\n  \"description\": \"Restaura 2d4+2 pontos de vida\",\n  \"emoji\": \"🧪\",\n  \"weight_kg\": 0.2,\n  \"base_value\": 25,\n  \"is_available\": true,\n  \"category_ids\": [\"{{ _.category_id }}\"]\n}"
+      }
+    },
+    {
+      "_id": "req_shop_list",
+      "_type": "request",
+      "parentId": "fld_shop",
+      "name": "List Shop Items",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/shop",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_shop_list_all",
+      "_type": "request",
+      "parentId": "fld_shop",
+      "name": "List Shop Items (GM — incluir indisponíveis)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/shop?include_unavailable=true",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_shop_list_by_cat",
+      "_type": "request",
+      "parentId": "fld_shop",
+      "name": "List Shop Items (filtrar por categoria)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/shop?category_id={{ _.category_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_shop_get",
+      "_type": "request",
+      "parentId": "fld_shop",
+      "name": "Get Shop Item",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/shop/{{ _.shop_item_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_shop_update",
+      "_type": "request",
+      "parentId": "fld_shop",
+      "name": "Update Shop Item",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/shop/{{ _.shop_item_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"base_value\": 30,\n  \"is_available\": false\n}"
+      }
+    },
+    {
+      "_id": "req_shop_delete",
+      "_type": "request",
+      "parentId": "fld_shop",
+      "name": "Delete Shop Item",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/shop/{{ _.shop_item_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+
+    {
+      "_id": "fld_transactions",
+      "_type": "request_group",
+      "parentId": "wrk_rpginventory",
+      "name": "💸 Transactions"
+    },
+    {
+      "_id": "req_tx_buy",
+      "_type": "request",
+      "parentId": "fld_transactions",
+      "name": "Start Transaction — Buy",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/transactions",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"type\": \"buy\",\n  \"character_id\": \"{{ _.character_id }}\",\n  \"items\": [\n    { \"shop_item_id\": \"{{ _.shop_item_id }}\", \"quantity\": 1 }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_tx_sell",
+      "_type": "request",
+      "parentId": "fld_transactions",
+      "name": "Start Transaction — Sell",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/transactions",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"type\": \"sell\",\n  \"character_id\": \"{{ _.character_id }}\",\n  \"items\": [\n    { \"inventory_item_id\": \"{{ _.item_id }}\", \"quantity\": 1 }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_tx_list",
+      "_type": "request",
+      "parentId": "fld_transactions",
+      "name": "List Transactions",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/transactions",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_tx_get",
+      "_type": "request",
+      "parentId": "fld_transactions",
+      "name": "Get Transaction",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/transactions/{{ _.transaction_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_tx_adjust_total",
+      "_type": "request",
+      "parentId": "fld_transactions",
+      "name": "Adjust — Total (desconto geral)",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/transactions/{{ _.transaction_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"adjusted_total\": 80,\n  \"notes\": \"Desconto por roleplay\"\n}"
+      }
+    },
+    {
+      "_id": "req_tx_adjust_items",
+      "_type": "request",
+      "parentId": "fld_transactions",
+      "name": "Adjust — Item individual",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/transactions/{{ _.transaction_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"items\": [\n    { \"id\": \"TX_ITEM_ID\", \"adjusted_unit_value\": 70 }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_tx_confirm",
+      "_type": "request",
+      "parentId": "fld_transactions",
+      "name": "Confirm Transaction",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/transactions/{{ _.transaction_id }}/confirm",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    },
+    {
+      "_id": "req_tx_cancel",
+      "_type": "request",
+      "parentId": "fld_transactions",
+      "name": "Cancel Transaction",
+      "method": "POST",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/transactions/{{ _.transaction_id }}/cancel",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {}
+    }
+  ]
+}

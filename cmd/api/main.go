@@ -6,13 +6,16 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
+	"github.com/rubendubeux/inventory-manager/internal/auth"
 	"github.com/rubendubeux/inventory-manager/internal/db"
+	"github.com/rubendubeux/inventory-manager/pkg/middleware"
 )
 
 func main() {
@@ -22,6 +25,9 @@ func main() {
 
 	databaseURL := mustEnv("DATABASE_URL")
 	port := getEnv("PORT", "8080")
+	jwtSecret := mustEnv("JWT_SECRET")
+	accessTTL := parseDuration(getEnv("JWT_ACCESS_TTL", "15m"))
+	refreshTTL := parseDuration(getEnv("JWT_REFRESH_TTL", "168h"))
 
 	pool, err := db.Connect(databaseURL)
 	if err != nil {
@@ -33,11 +39,30 @@ func main() {
 		log.Fatalf("migrations failed: %v", err)
 	}
 
+	// Auth
+	authRepo := auth.NewRepository(pool)
+	authSvc := auth.NewService(authRepo, auth.Config{
+		JWTSecret:       jwtSecret,
+		AccessTokenTTL:  accessTTL,
+		RefreshTokenTTL: refreshTTL,
+	})
+	authHandler := auth.NewHandler(authSvc)
+
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	r.Use(chiMiddleware.Logger)
+	r.Use(chiMiddleware.Recoverer)
 
 	r.Get("/health", healthHandler(pool))
+
+	r.Post("/auth/register", authHandler.Register)
+	r.Post("/auth/login", authHandler.Login)
+	r.Post("/auth/refresh", authHandler.Refresh)
+
+	// Grupo protegido — próximas fases adicionam rotas aqui
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.Authenticate(jwtSecret))
+		// rotas protegidas
+	})
 
 	log.Printf("server listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, r); err != nil {
@@ -51,17 +76,11 @@ func healthHandler(pool *pgxpool.Pool) http.HandlerFunc {
 
 		if err := pool.Ping(context.Background()); err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			json.NewEncoder(w).Encode(map[string]string{
-				"status": "error",
-				"db":     "unreachable",
-			})
+			json.NewEncoder(w).Encode(map[string]string{"status": "error", "db": "unreachable"})
 			return
 		}
 
-		json.NewEncoder(w).Encode(map[string]string{
-			"status": "ok",
-			"db":     "connected",
-		})
+		json.NewEncoder(w).Encode(map[string]string{"status": "ok", "db": "connected"})
 	}
 }
 
@@ -78,4 +97,12 @@ func getEnv(key, fallback string) string {
 		return val
 	}
 	return fallback
+}
+
+func parseDuration(s string) time.Duration {
+	d, err := time.ParseDuration(s)
+	if err != nil {
+		log.Fatalf("invalid duration %q: %v", s, err)
+	}
+	return d
 }
