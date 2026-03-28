@@ -15,6 +15,7 @@ import (
 
 	"github.com/rubendubeux/inventory-manager/internal/auth"
 	"github.com/rubendubeux/inventory-manager/internal/campaign"
+	"github.com/rubendubeux/inventory-manager/internal/coin"
 	"github.com/rubendubeux/inventory-manager/internal/db"
 	"github.com/rubendubeux/inventory-manager/pkg/middleware"
 )
@@ -54,6 +55,11 @@ func main() {
 	campaignSvc := campaign.NewService(campaignRepo)
 	campaignHandler := campaign.NewHandler(campaignSvc)
 
+	// Coin
+	coinRepo := coin.NewRepository(pool)
+	coinSvc := coin.NewService(coinRepo)
+	coinHandler := coin.NewHandler(coinSvc)
+
 	r := chi.NewRouter()
 	r.Use(chiMiddleware.Logger)
 	r.Use(chiMiddleware.Recoverer)
@@ -85,6 +91,28 @@ func main() {
 			r.Delete("/members/{userID}", campaignHandler.RemoveMember)
 
 			r.Post("/invites", campaignHandler.CreateInvite)
+
+			// Coins
+			r.Route("/coins", func(r chi.Router) {
+				r.Get("/", coinHandler.ListCoinTypes)
+				r.Post("/", coinHandler.CreateCoinType)
+				r.Get("/default", coinHandler.GetDefaultCoin)
+
+				r.Route("/{coinID}", func(r chi.Router) {
+					r.Get("/", coinHandler.GetCoinType)
+					r.Put("/", coinHandler.UpdateCoinType)
+					r.Delete("/", coinHandler.DeleteCoinType)
+					r.Post("/set-default", coinHandler.SetDefaultCoin)
+				})
+			})
+
+			// Conversions
+			r.Route("/conversions", func(r chi.Router) {
+				r.Get("/", coinHandler.ListConversions)
+				r.Post("/", coinHandler.CreateConversion)
+				r.Get("/{conversionID}", coinHandler.GetConversion)
+				r.Delete("/{conversionID}", coinHandler.DeleteConversion)
+			})
 		})
 	})
 
