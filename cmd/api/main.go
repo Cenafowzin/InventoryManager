@@ -15,6 +15,7 @@ import (
 
 	"github.com/rubendubeux/inventory-manager/internal/auth"
 	"github.com/rubendubeux/inventory-manager/internal/campaign"
+	"github.com/rubendubeux/inventory-manager/internal/character"
 	"github.com/rubendubeux/inventory-manager/internal/coin"
 	"github.com/rubendubeux/inventory-manager/internal/db"
 	"github.com/rubendubeux/inventory-manager/pkg/middleware"
@@ -60,6 +61,11 @@ func main() {
 	coinSvc := coin.NewService(coinRepo)
 	coinHandler := coin.NewHandler(coinSvc)
 
+	// Character
+	characterRepo := character.NewRepository(pool)
+	characterSvc := character.NewService(characterRepo)
+	characterHandler := character.NewHandler(characterSvc)
+
 	r := chi.NewRouter()
 	r.Use(chiMiddleware.Logger)
 	r.Use(chiMiddleware.Recoverer)
@@ -91,6 +97,18 @@ func main() {
 			r.Delete("/members/{userID}", campaignHandler.RemoveMember)
 
 			r.Post("/invites", campaignHandler.CreateInvite)
+
+			// Characters
+			r.Route("/characters", func(r chi.Router) {
+				r.Get("/", characterHandler.List)
+				r.Post("/", characterHandler.Create)
+
+				r.Route("/{charID}", func(r chi.Router) {
+					r.Get("/", characterHandler.Get)
+					r.Put("/", characterHandler.Update)
+					r.Delete("/", characterHandler.Delete)
+				})
+			})
 
 			// Coins
 			r.Route("/coins", func(r chi.Router) {
