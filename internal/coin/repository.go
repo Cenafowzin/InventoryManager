@@ -144,6 +144,19 @@ func (r *Repository) SetDefaultCoin(ctx context.Context, campaignID, coinID uuid
 
 // ── CoinConversions ───────────────────────────────────────────────────────────
 
+func (r *Repository) PairExists(ctx context.Context, fromID, toID uuid.UUID) (bool, error) {
+	var count int
+	err := r.db.QueryRow(ctx, `
+		SELECT COUNT(*) FROM coin_conversions
+		WHERE (from_coin_id = $1 AND to_coin_id = $2)
+		   OR (from_coin_id = $2 AND to_coin_id = $1)
+	`, fromID, toID).Scan(&count)
+	if err != nil {
+		return false, fmt.Errorf("check pair exists: %w", err)
+	}
+	return count > 0, nil
+}
+
 func (r *Repository) CreateConversionPair(ctx context.Context, campaignID, fromID, toID uuid.UUID, rate float64) ([]models.CoinConversion, error) {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
@@ -159,8 +172,8 @@ func (r *Repository) CreateConversionPair(ctx context.Context, campaignID, fromI
 
 	q := `
 		WITH ins AS (
-			INSERT INTO coin_conversions (campaign_id, from_coin_id, to_coin_id, rate)
-			VALUES ($1, $2, $3, $4)
+			INSERT INTO coin_conversions (campaign_id, from_coin_id, to_coin_id, rate, is_canonical)
+			VALUES ($1, $2, $3, $4, $5)
 			RETURNING id, campaign_id, from_coin_id, to_coin_id, rate
 		)
 		SELECT i.id, i.campaign_id, i.from_coin_id, f.abbreviation, i.to_coin_id, t.abbreviation, i.rate
@@ -169,12 +182,12 @@ func (r *Repository) CreateConversionPair(ctx context.Context, campaignID, fromI
 		JOIN coin_types t ON t.id = i.to_coin_id
 	`
 
-	fwd, err := scanConversion(tx.QueryRow(ctx, q, campaignID, fromID, toID, rate))
+	fwd, err := scanConversion(tx.QueryRow(ctx, q, campaignID, fromID, toID, rate, true))
 	if err != nil {
 		return nil, fmt.Errorf("insert forward conversion: %w", err)
 	}
 
-	inv, err := scanConversion(tx.QueryRow(ctx, q, campaignID, toID, fromID, 1.0/rate))
+	inv, err := scanConversion(tx.QueryRow(ctx, q, campaignID, toID, fromID, 1.0/rate, false))
 	if err != nil {
 		return nil, fmt.Errorf("insert inverse conversion: %w", err)
 	}
@@ -192,7 +205,7 @@ func (r *Repository) ListConversions(ctx context.Context, campaignID uuid.UUID) 
 		FROM coin_conversions cc
 		JOIN coin_types f ON f.id = cc.from_coin_id
 		JOIN coin_types t ON t.id = cc.to_coin_id
-		WHERE cc.campaign_id = $1
+		WHERE cc.campaign_id = $1 AND cc.is_canonical = TRUE
 		ORDER BY f.name, t.name
 	`, campaignID)
 	if err != nil {

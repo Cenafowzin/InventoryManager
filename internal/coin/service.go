@@ -75,6 +75,13 @@ func (s *Service) CreateConversion(ctx context.Context, campaignID, fromID, toID
 	if rate <= 0 {
 		return nil, fmt.Errorf("rate must be greater than zero")
 	}
+	exists, err := s.repo.PairExists(ctx, fromID, toID)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, ErrConversionExists
+	}
 	return s.repo.CreateConversionPair(ctx, campaignID, fromID, toID, rate)
 }
 

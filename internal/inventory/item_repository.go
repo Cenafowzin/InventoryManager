@@ -38,6 +38,44 @@ func (r *ItemRepository) CreateItem(ctx context.Context, characterID, storageSpa
 	return r.GetItemByID(ctx, id)
 }
 
+func (r *ItemRepository) loadCategoriesForItems(ctx context.Context, items []models.Item) error {
+	if len(items) == 0 {
+		return nil
+	}
+	ids := make([]uuid.UUID, len(items))
+	for i, it := range items {
+		ids[i] = it.ID
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT ic.item_id, c.id, c.campaign_id, c.name, c.color, c.created_at
+		FROM item_categories ic
+		JOIN categories c ON c.id = ic.category_id
+		WHERE ic.item_id = ANY($1)
+	`, ids)
+	if err != nil {
+		return fmt.Errorf("load item categories: %w", err)
+	}
+	defer rows.Close()
+
+	catMap := make(map[uuid.UUID][]models.Category)
+	for rows.Next() {
+		var itemID uuid.UUID
+		var cat models.Category
+		if err := rows.Scan(&itemID, &cat.ID, &cat.CampaignID, &cat.Name, &cat.Color, &cat.CreatedAt); err != nil {
+			return err
+		}
+		catMap[itemID] = append(catMap[itemID], cat)
+	}
+	for i := range items {
+		if cats, ok := catMap[items[i].ID]; ok {
+			items[i].Categories = cats
+		} else {
+			items[i].Categories = []models.Category{}
+		}
+	}
+	return nil
+}
+
 func (r *ItemRepository) GetItemByID(ctx context.Context, id uuid.UUID) (*models.Item, error) {
 	var item models.Item
 	err := r.db.QueryRow(ctx, `
@@ -61,7 +99,11 @@ func (r *ItemRepository) GetItemByID(ctx context.Context, id uuid.UUID) (*models
 	if err != nil {
 		return nil, fmt.Errorf("get item: %w", err)
 	}
-	return &item, nil
+	items := []models.Item{item}
+	if err := r.loadCategoriesForItems(ctx, items); err != nil {
+		return nil, err
+	}
+	return &items[0], nil
 }
 
 func (r *ItemRepository) ListItemsByCharacter(ctx context.Context, characterID uuid.UUID, filters ItemFilters) ([]models.Item, error) {
@@ -107,6 +149,9 @@ func (r *ItemRepository) ListItemsByCharacter(ctx context.Context, characterID u
 			return nil, err
 		}
 		items = append(items, item)
+	}
+	if err := r.loadCategoriesForItems(ctx, items); err != nil {
+		return nil, err
 	}
 	return items, nil
 }

@@ -93,3 +93,35 @@ func (r *CoinRepository) GetConversionRate(ctx context.Context, fromID, toID uui
 	}
 	return rate, nil
 }
+
+type ConversionEdge struct {
+	FromID uuid.UUID
+	ToID   uuid.UUID
+	Rate   float64
+}
+
+// ListAllConversionsForCharacter retorna todas as conversões (ambas as direções) da campanha do personagem,
+// usadas para encontrar caminhos transitivos via BFS.
+func (r *CoinRepository) ListAllConversionsForCharacter(ctx context.Context, characterID uuid.UUID) ([]ConversionEdge, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT cc.from_coin_id, cc.to_coin_id, cc.rate
+		FROM coin_conversions cc
+		JOIN coin_types ct ON ct.id = cc.from_coin_id
+		JOIN characters ch ON ch.campaign_id = ct.campaign_id
+		WHERE ch.id = $1
+	`, characterID)
+	if err != nil {
+		return nil, fmt.Errorf("list conversions for character: %w", err)
+	}
+	defer rows.Close()
+
+	var edges []ConversionEdge
+	for rows.Next() {
+		var e ConversionEdge
+		if err := rows.Scan(&e.FromID, &e.ToID, &e.Rate); err != nil {
+			return nil, err
+		}
+		edges = append(edges, e)
+	}
+	return edges, nil
+}

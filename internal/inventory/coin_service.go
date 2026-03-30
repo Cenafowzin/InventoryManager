@@ -44,6 +44,46 @@ type ConvertResult struct {
 	To   models.CoinPurse `json:"to"`
 }
 
+// findEffectiveRate faz BFS no grafo de conversões para encontrar a taxa composta entre dois coins.
+func findEffectiveRate(edges []ConversionEdge, fromID, toID uuid.UUID) (float64, bool) {
+	if fromID == toID {
+		return 1.0, true
+	}
+	type state struct {
+		id   uuid.UUID
+		rate float64
+	}
+	graph := make(map[uuid.UUID][]struct {
+		to   uuid.UUID
+		rate float64
+	})
+	for _, e := range edges {
+		graph[e.FromID] = append(graph[e.FromID], struct {
+			to   uuid.UUID
+			rate float64
+		}{e.ToID, e.Rate})
+	}
+	visited := make(map[uuid.UUID]bool)
+	queue := []state{{fromID, 1.0}}
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+		if visited[cur.id] {
+			continue
+		}
+		visited[cur.id] = true
+		if cur.id == toID {
+			return cur.rate, true
+		}
+		for _, e := range graph[cur.id] {
+			if !visited[e.to] {
+				queue = append(queue, state{e.to, cur.rate * e.rate})
+			}
+		}
+	}
+	return 0, false
+}
+
 func (s *CoinService) ConvertCoins(ctx context.Context, characterID, fromCoinID, toCoinID, requesterID uuid.UUID, requesterRole string, amount float64) (*ConvertResult, error) {
 	if err := s.checkAccess(ctx, characterID, requesterID, requesterRole); err != nil {
 		return nil, err
@@ -52,9 +92,13 @@ func (s *CoinService) ConvertCoins(ctx context.Context, characterID, fromCoinID,
 		return nil, fmt.Errorf("amount must be greater than zero")
 	}
 
-	rate, err := s.coinRepo.GetConversionRate(ctx, fromCoinID, toCoinID)
+	edges, err := s.coinRepo.ListAllConversionsForCharacter(ctx, characterID)
 	if err != nil {
 		return nil, err
+	}
+	rate, ok := findEffectiveRate(edges, fromCoinID, toCoinID)
+	if !ok {
+		return nil, ErrNoConversion
 	}
 
 	balance, err := s.coinRepo.GetCoinBalance(ctx, characterID, fromCoinID)
