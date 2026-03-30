@@ -35,13 +35,27 @@ O controle de acesso real é feito pela aplicação (JWT + middleware), não pel
 - 005_create_coins (coin_types, coin_conversions, coin_purse)
 - 006_create_characters
 
+## Padrão — EnsureDefaultSpace
+- Ao criar personagem, o handler chama `storageSvc.EnsureDefaultSpace(ctx, ch.ID)`
+- Espaço default = "Corpo", `counts_toward_load = true`, `is_default = true`
+- Não pode ser deletado (guard em DeleteStorageSpace)
+- Handler usa interface `SpaceEnsurer` para evitar import circular character ← inventory
+
+## Padrão — Categorias
+- Mesma lógica para items e shop_items (mesmo `categories` table)
+- Join tables: `item_categories` e `shop_item_categories`
+- `category.Repository` tem `SetItemCategories` e `SetShopItemCategories` (mesma lógica, tabela diferente)
+- `ValidateCategoryIDs` verifica que todos os IDs pertencem à campanha antes de associar
+
 ## Fases Implementadas
 - [x] Fase 1 — Foundation
 - [x] Fase 2 — Auth (register, login, refresh JWT)
 - [x] Fase 3 — Campaigns (CRUD + members + invite por código)
 - [x] Fase 4 — Coins (coin_types, conversions bidirecionais, set-default)
 - [x] Fase 5 — Characters (CRUD com controle owner/gm, max_carry_weight_kg)
-- [ ] Fase 6 — Inventory (storages, items, coin purse, load summary)
+- [x] Fase 6 — Inventory (categories, storages, items, coin purse, load summary)
+  - Migration: 007_create_inventory
+  - Pacotes: internal/category, internal/inventory
 - [ ] Fase 7 — Shop
 - [ ] Fase 8 — Transactions
 

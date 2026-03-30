@@ -1,0 +1,146 @@
+package inventory
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/rubendubeux/inventory-manager/models"
+)
+
+type ItemRepository struct {
+	db *pgxpool.Pool
+}
+
+func NewItemRepository(db *pgxpool.Pool) *ItemRepository {
+	return &ItemRepository{db: db}
+}
+
+type ItemFilters struct {
+	CategoryID     *uuid.UUID
+	StorageSpaceID *uuid.UUID
+}
+
+func (r *ItemRepository) CreateItem(ctx context.Context, characterID, storageSpaceID uuid.UUID, shopItemID, valueCoinID *uuid.UUID, name, description, emoji string, weightKg, value float64, quantity int) (*models.Item, error) {
+	var id uuid.UUID
+	err := r.db.QueryRow(ctx, `
+		INSERT INTO items (character_id, storage_space_id, shop_item_id, name, description, emoji, weight_kg, value, value_coin_id, quantity)
+		VALUES ($1, $2, $3, $4, NULLIF($5, ''), NULLIF($6, ''), $7, $8, $9, $10)
+		RETURNING id
+	`, characterID, storageSpaceID, shopItemID, name, description, emoji, weightKg, value, valueCoinID, quantity).Scan(&id)
+	if err != nil {
+		return nil, fmt.Errorf("create item: %w", err)
+	}
+	return r.GetItemByID(ctx, id)
+}
+
+func (r *ItemRepository) GetItemByID(ctx context.Context, id uuid.UUID) (*models.Item, error) {
+	var item models.Item
+	err := r.db.QueryRow(ctx, `
+		SELECT i.id, i.character_id, i.storage_space_id, COALESCE(s.name, ''),
+		       i.name, COALESCE(i.description, ''), COALESCE(i.emoji, ''),
+		       i.weight_kg, i.value, i.value_coin_id, COALESCE(ct.abbreviation, ''),
+		       i.quantity, i.shop_item_id, i.created_at, i.updated_at
+		FROM items i
+		LEFT JOIN storage_spaces s ON s.id = i.storage_space_id
+		LEFT JOIN coin_types ct ON ct.id = i.value_coin_id
+		WHERE i.id = $1
+	`, id).Scan(
+		&item.ID, &item.CharacterID, &item.StorageSpaceID, &item.StorageSpace,
+		&item.Name, &item.Description, &item.Emoji,
+		&item.WeightKg, &item.Value, &item.ValueCoinID, &item.ValueCoin,
+		&item.Quantity, &item.ShopItemID, &item.CreatedAt, &item.UpdatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrItemNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get item: %w", err)
+	}
+	return &item, nil
+}
+
+func (r *ItemRepository) ListItemsByCharacter(ctx context.Context, characterID uuid.UUID, filters ItemFilters) ([]models.Item, error) {
+	query := `
+		SELECT i.id, i.character_id, i.storage_space_id, COALESCE(s.name, ''),
+		       i.name, COALESCE(i.description, ''), COALESCE(i.emoji, ''),
+		       i.weight_kg, i.value, i.value_coin_id, COALESCE(ct.abbreviation, ''),
+		       i.quantity, i.shop_item_id, i.created_at, i.updated_at
+		FROM items i
+		LEFT JOIN storage_spaces s ON s.id = i.storage_space_id
+		LEFT JOIN coin_types ct ON ct.id = i.value_coin_id
+		WHERE i.character_id = $1
+	`
+	args := []any{characterID}
+	idx := 2
+
+	if filters.CategoryID != nil {
+		query += fmt.Sprintf(` AND EXISTS (SELECT 1 FROM item_categories ic WHERE ic.item_id = i.id AND ic.category_id = $%d)`, idx)
+		args = append(args, *filters.CategoryID)
+		idx++
+	}
+	if filters.StorageSpaceID != nil {
+		query += fmt.Sprintf(` AND i.storage_space_id = $%d`, idx)
+		args = append(args, *filters.StorageSpaceID)
+	}
+	query += ` ORDER BY i.created_at ASC`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list items: %w", err)
+	}
+	defer rows.Close()
+
+	var items []models.Item
+	for rows.Next() {
+		var item models.Item
+		if err := rows.Scan(
+			&item.ID, &item.CharacterID, &item.StorageSpaceID, &item.StorageSpace,
+			&item.Name, &item.Description, &item.Emoji,
+			&item.WeightKg, &item.Value, &item.ValueCoinID, &item.ValueCoin,
+			&item.Quantity, &item.ShopItemID, &item.CreatedAt, &item.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
+
+func (r *ItemRepository) UpdateItem(ctx context.Context, id, storageSpaceID uuid.UUID, valueCoinID *uuid.UUID, name, description, emoji string, weightKg, value float64, quantity int) (*models.Item, error) {
+	tag, err := r.db.Exec(ctx, `
+		UPDATE items
+		SET storage_space_id = $1, name = $2, description = NULLIF($3, ''), emoji = NULLIF($4, ''),
+		    weight_kg = $5, value = $6, value_coin_id = $7, quantity = $8, updated_at = NOW()
+		WHERE id = $9
+	`, storageSpaceID, name, description, emoji, weightKg, value, valueCoinID, quantity, id)
+	if err != nil {
+		return nil, fmt.Errorf("update item: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return nil, ErrItemNotFound
+	}
+	return r.GetItemByID(ctx, id)
+}
+
+func (r *ItemRepository) DeleteItem(ctx context.Context, id uuid.UUID) error {
+	tag, err := r.db.Exec(ctx, `DELETE FROM items WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("delete item: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrItemNotFound
+	}
+	return nil
+}
+
+func (r *ItemRepository) DecrementQuantity(ctx context.Context, id uuid.UUID, qty int) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE items SET quantity = quantity - $1, updated_at = NOW() WHERE id = $2 AND quantity >= $1
+	`, qty, id)
+	return err
+}

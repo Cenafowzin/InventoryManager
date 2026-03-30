@@ -1,6 +1,7 @@
 package character
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -11,12 +12,18 @@ import (
 	"github.com/rubendubeux/inventory-manager/pkg/middleware"
 )
 
-type Handler struct {
-	svc *Service
+// SpaceEnsurer é implementado por inventory.StorageService para evitar import circular.
+type SpaceEnsurer interface {
+	EnsureDefaultSpace(ctx context.Context, characterID uuid.UUID) error
 }
 
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+type Handler struct {
+	svc        *Service
+	spaceEnsurer SpaceEnsurer
+}
+
+func NewHandler(svc *Service, spaceEnsurer SpaceEnsurer) *Handler {
+	return &Handler{svc: svc, spaceEnsurer: spaceEnsurer}
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -54,6 +61,12 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+
+	if err := h.spaceEnsurer.EnsureDefaultSpace(r.Context(), ch.ID); err != nil {
+		writeError(w, http.StatusInternalServerError, "character created but failed to initialize storage")
+		return
+	}
+
 	writeJSON(w, http.StatusCreated, ch)
 }
 

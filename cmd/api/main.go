@@ -15,9 +15,11 @@ import (
 
 	"github.com/rubendubeux/inventory-manager/internal/auth"
 	"github.com/rubendubeux/inventory-manager/internal/campaign"
+	"github.com/rubendubeux/inventory-manager/internal/category"
 	"github.com/rubendubeux/inventory-manager/internal/character"
 	"github.com/rubendubeux/inventory-manager/internal/coin"
 	"github.com/rubendubeux/inventory-manager/internal/db"
+	"github.com/rubendubeux/inventory-manager/internal/inventory"
 	"github.com/rubendubeux/inventory-manager/pkg/middleware"
 )
 
@@ -61,10 +63,27 @@ func main() {
 	coinSvc := coin.NewService(coinRepo)
 	coinHandler := coin.NewHandler(coinSvc)
 
-	// Character
+	// Category
+	categoryRepo := category.NewRepository(pool)
+	categorySvc := category.NewService(categoryRepo)
+	categoryHandler := category.NewHandler(categorySvc)
+
+	// Inventory
+	storageRepo := inventory.NewStorageRepository(pool)
+	itemRepo := inventory.NewItemRepository(pool)
+	coinPurseRepo := inventory.NewCoinRepository(pool)
+
+	// Character (precisa do storageService para EnsureDefaultSpace)
 	characterRepo := character.NewRepository(pool)
 	characterSvc := character.NewService(characterRepo)
-	characterHandler := character.NewHandler(characterSvc)
+
+	storageSvc := inventory.NewStorageService(storageRepo, characterRepo)
+	itemSvc := inventory.NewItemService(itemRepo, storageRepo, characterRepo, coinRepo, categoryRepo)
+	coinPurseSvc := inventory.NewCoinService(coinPurseRepo, characterRepo)
+	summarySvc := inventory.NewSummaryService(storageRepo, itemRepo, coinPurseRepo, characterRepo)
+	inventoryHandler := inventory.NewHandler(storageSvc, itemSvc, coinPurseSvc, summarySvc)
+
+	characterHandler := character.NewHandler(characterSvc, storageSvc)
 
 	r := chi.NewRouter()
 	r.Use(chiMiddleware.Logger)
@@ -98,6 +117,16 @@ func main() {
 
 			r.Post("/invites", campaignHandler.CreateInvite)
 
+			// Categories
+			r.Route("/categories", func(r chi.Router) {
+				r.Get("/", categoryHandler.List)
+				r.Post("/", categoryHandler.Create)
+				r.Route("/{catID}", func(r chi.Router) {
+					r.Put("/", categoryHandler.Update)
+					r.Delete("/", categoryHandler.Delete)
+				})
+			})
+
 			// Characters
 			r.Route("/characters", func(r chi.Router) {
 				r.Get("/", characterHandler.List)
@@ -107,6 +136,38 @@ func main() {
 					r.Get("/", characterHandler.Get)
 					r.Put("/", characterHandler.Update)
 					r.Delete("/", characterHandler.Delete)
+
+					// Storage Spaces
+					r.Route("/storages", func(r chi.Router) {
+						r.Get("/", inventoryHandler.ListStorages)
+						r.Post("/", inventoryHandler.CreateStorage)
+						r.Route("/{storageID}", func(r chi.Router) {
+							r.Put("/", inventoryHandler.UpdateStorage)
+							r.Delete("/", inventoryHandler.DeleteStorage)
+						})
+					})
+
+					// Items
+					r.Route("/items", func(r chi.Router) {
+						r.Get("/", inventoryHandler.ListItems)
+						r.Post("/", inventoryHandler.CreateItem)
+						r.Route("/{itemID}", func(r chi.Router) {
+							r.Get("/", inventoryHandler.GetItem)
+							r.Put("/", inventoryHandler.UpdateItem)
+							r.Delete("/", inventoryHandler.DeleteItem)
+						})
+					})
+
+					// Coin Purse
+					r.Route("/coins", func(r chi.Router) {
+						r.Get("/", inventoryHandler.GetCoinPurse)
+						r.Post("/convert", inventoryHandler.ConvertCoins)
+						r.Put("/{coinID}", inventoryHandler.SetCoinBalance)
+					})
+
+					// Summary
+					r.Get("/inventory", inventoryHandler.GetInventorySummary)
+					r.Get("/load", inventoryHandler.GetLoad)
 				})
 			})
 

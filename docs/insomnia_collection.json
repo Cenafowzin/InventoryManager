@@ -471,7 +471,8 @@
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"name\": \"Arathor, o Guerreiro\",\n  \"description\": \"Elfo ranger das montanhas\",\n  \"max_carry_weight_kg\": 50\n}"
-      }
+      },
+      "afterResponseScript": "const res = await insomnia.response.json();\nif (res.id) {\n  await insomnia.environment.set('character_id', res.id);\n}"
     },
     {
       "_id": "req_character_list",
@@ -533,6 +534,20 @@
       "name": "🎒 Storage Spaces"
     },
     {
+      "_id": "req_category_get_id",
+      "_type": "request",
+      "parentId": "fld_categories",
+      "name": "Get Category ID (via list)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/campaigns/{{ _.campaign_id }}/categories",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.access_token }}" }
+      ],
+      "body": {},
+      "afterResponseScript": "const res = await insomnia.response.json();\nif (Array.isArray(res) && res[0]?.id) {\n  await insomnia.environment.set('category_id', res[0].id);\n}"
+    },
+
+    {
       "_id": "req_storage_create",
       "_type": "request",
       "parentId": "fld_storages",
@@ -546,7 +561,8 @@
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"name\": \"Mochila\",\n  \"description\": \"Mochila de couro resistente\",\n  \"counts_toward_load\": true,\n  \"capacity_kg\": 15\n}"
-      }
+      },
+      "afterResponseScript": "const res = await insomnia.response.json();\nif (res.id) {\n  await insomnia.environment.set('storage_id', res.id);\n}"
     },
     {
       "_id": "req_storage_list",
@@ -609,7 +625,8 @@
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"name\": \"Espada Longa\",\n  \"description\": \"Espada de aço élfico\",\n  \"emoji\": \"⚔️\",\n  \"weight_kg\": 1.5,\n  \"value\": 100,\n  \"storage_space_id\": \"{{ _.storage_id }}\",\n  \"category_ids\": [\"{{ _.category_id }}\"],\n  \"quantity\": 1\n}"
-      }
+      },
+      "afterResponseScript": "const res = await insomnia.response.json();\nif (res.id) {\n  await insomnia.environment.set('item_id', res.id);\n}"
     },
     {
       "_id": "req_item_create_lbs",
