@@ -408,7 +408,8 @@
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"name\": \"Arma\",\n  \"color\": \"#E74C3C\"\n}"
-      }
+      },
+      "afterResponseScript": "const res = await insomnia.response.json();\nif (res.id) {\n  await insomnia.environment.set('category_id', res.id);\n}"
     },
     {
       "_id": "req_category_list",
@@ -823,7 +824,8 @@
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"name\": \"Poção de Cura\",\n  \"description\": \"Restaura 2d4+2 pontos de vida\",\n  \"emoji\": \"🧪\",\n  \"weight_kg\": 0.2,\n  \"base_value\": 25,\n  \"is_available\": true,\n  \"category_ids\": [\"{{ _.category_id }}\"]\n}"
-      }
+      },
+      "afterResponseScript": "const res = await insomnia.response.json();\nif (res.id) {\n  await insomnia.environment.set('shop_item_id', res.id);\n}"
     },
     {
       "_id": "req_shop_list",

@@ -48,3 +48,11 @@ func (s *Service) DeleteCategory(ctx context.Context, id uuid.UUID, requesterRol
 	}
 	return s.repo.DeleteCategory(ctx, id)
 }
+
+func (s *Service) ValidateCategoryIDs(ctx context.Context, campaignID uuid.UUID, categoryIDs []uuid.UUID) error {
+	return s.repo.ValidateCategoryIDs(ctx, campaignID, categoryIDs)
+}
+
+func (s *Service) SetShopItemCategories(ctx context.Context, shopItemID uuid.UUID, categoryIDs []uuid.UUID) error {
+	return s.repo.SetShopItemCategories(ctx, shopItemID, categoryIDs)
+}

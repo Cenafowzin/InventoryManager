@@ -21,6 +21,7 @@ import (
 	"github.com/rubendubeux/inventory-manager/internal/coin"
 	"github.com/rubendubeux/inventory-manager/internal/db"
 	"github.com/rubendubeux/inventory-manager/internal/inventory"
+	"github.com/rubendubeux/inventory-manager/internal/shop"
 	"github.com/rubendubeux/inventory-manager/pkg/middleware"
 )
 
@@ -85,6 +86,11 @@ func main() {
 	inventoryHandler := inventory.NewHandler(storageSvc, itemSvc, coinPurseSvc, summarySvc)
 
 	characterHandler := character.NewHandler(characterSvc, storageSvc)
+
+	// Shop
+	shopRepo := shop.NewRepository(pool)
+	shopSvc := shop.NewService(shopRepo, categorySvc, coinSvc)
+	shopHandler := shop.NewHandler(shopSvc)
 
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
@@ -190,6 +196,17 @@ func main() {
 					r.Put("/", coinHandler.UpdateCoinType)
 					r.Delete("/", coinHandler.DeleteCoinType)
 					r.Post("/set-default", coinHandler.SetDefaultCoin)
+				})
+			})
+
+			// Shop
+			r.Route("/shop", func(r chi.Router) {
+				r.Get("/", shopHandler.ListShopItems)
+				r.Post("/", shopHandler.CreateShopItem)
+				r.Route("/{shopItemID}", func(r chi.Router) {
+					r.Get("/", shopHandler.GetShopItem)
+					r.Put("/", shopHandler.UpdateShopItem)
+					r.Delete("/", shopHandler.DeleteShopItem)
 				})
 			})
 

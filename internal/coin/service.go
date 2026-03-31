@@ -33,6 +33,10 @@ func (s *Service) GetCoinType(ctx context.Context, id uuid.UUID) (*models.CoinTy
 	return s.repo.GetCoinTypeByID(ctx, id)
 }
 
+func (s *Service) GetCoinByID(ctx context.Context, id uuid.UUID) (*models.CoinType, error) {
+	return s.repo.GetCoinTypeByID(ctx, id)
+}
+
 func (s *Service) ListCoinTypes(ctx context.Context, campaignID uuid.UUID) ([]models.CoinType, error) {
 	return s.repo.ListCoinTypes(ctx, campaignID)
 }
