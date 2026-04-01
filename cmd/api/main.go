@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/rubendubeux/inventory-manager/internal/db"
 	"github.com/rubendubeux/inventory-manager/internal/inventory"
 	"github.com/rubendubeux/inventory-manager/internal/shop"
+	"github.com/rubendubeux/inventory-manager/internal/transaction"
 	"github.com/rubendubeux/inventory-manager/pkg/middleware"
 )
 
@@ -91,6 +93,12 @@ func main() {
 	shopRepo := shop.NewRepository(pool)
 	shopSvc := shop.NewService(shopRepo, categorySvc, coinSvc)
 	shopHandler := shop.NewHandler(shopSvc)
+
+	// Transaction
+	txRepo := transaction.NewRepository(pool)
+	txCoinAdapter := &txCoinAdapter{repo: coinPurseRepo}
+	txSvc := transaction.NewService(txRepo, characterRepo, shopRepo, categoryRepo, itemRepo, txCoinAdapter, storageRepo, coinSvc)
+	txHandler := transaction.NewHandler(txSvc)
 
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
@@ -199,6 +207,18 @@ func main() {
 				})
 			})
 
+			// Transactions
+			r.Route("/transactions", func(r chi.Router) {
+				r.Get("/", txHandler.List)
+				r.Post("/", txHandler.Create)
+				r.Route("/{txID}", func(r chi.Router) {
+					r.Get("/", txHandler.Get)
+					r.Patch("/", txHandler.Adjust)
+					r.Post("/confirm", txHandler.Confirm)
+					r.Post("/cancel", txHandler.Cancel)
+				})
+			})
+
 			// Shop
 			r.Route("/shop", func(r chi.Router) {
 				r.Get("/", shopHandler.ListShopItems)
@@ -259,4 +279,25 @@ func parseDuration(s string) time.Duration {
 		log.Fatalf("invalid duration %q: %v", s, err)
 	}
 	return d
+}
+
+// txCoinAdapter adapts inventory.CoinRepository to transaction.CoinRepo interface.
+type txCoinAdapter struct {
+	repo *inventory.CoinRepository
+}
+
+func (a *txCoinAdapter) GetCoinBalance(ctx context.Context, characterID, coinTypeID uuid.UUID) (float64, error) {
+	return a.repo.GetCoinBalance(ctx, characterID, coinTypeID)
+}
+
+func (a *txCoinAdapter) ListConversionEdges(ctx context.Context, characterID uuid.UUID) ([]transaction.ConversionEdge, error) {
+	edges, err := a.repo.ListAllConversionsForCharacter(ctx, characterID)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]transaction.ConversionEdge, len(edges))
+	for i, e := range edges {
+		result[i] = transaction.ConversionEdge{FromID: e.FromID, ToID: e.ToID, Rate: e.Rate}
+	}
+	return result, nil
 }
