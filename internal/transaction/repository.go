@@ -364,9 +364,9 @@ func (r *Repository) ConfirmBuy(
 	// Debit coins
 	_, err = tx.Exec(ctx, `
 		INSERT INTO coin_purse (character_id, coin_type_id, amount, updated_at)
-		VALUES ($1, $2, GREATEST(0, -$3), NOW())
+		VALUES ($1, $2, GREATEST(0, 0 - $3::numeric), NOW())
 		ON CONFLICT (character_id, coin_type_id)
-		DO UPDATE SET amount = GREATEST(0, coin_purse.amount - $3), updated_at = NOW()
+		DO UPDATE SET amount = GREATEST(0, coin_purse.amount - $3::numeric), updated_at = NOW()
 	`, characterID, coinID, totalToDebit)
 	if err != nil {
 		return nil, fmt.Errorf("debit coins: %w", err)
@@ -429,9 +429,9 @@ func (r *Repository) ConfirmSell(
 	// Credit coins
 	_, err = tx.Exec(ctx, `
 		INSERT INTO coin_purse (character_id, coin_type_id, amount, updated_at)
-		VALUES ($1, $2, $3, NOW())
+		VALUES ($1, $2, $3::numeric, NOW())
 		ON CONFLICT (character_id, coin_type_id)
-		DO UPDATE SET amount = coin_purse.amount + $3, updated_at = NOW()
+		DO UPDATE SET amount = coin_purse.amount + $3::numeric, updated_at = NOW()
 	`, characterID, coinID, totalToCredit)
 	if err != nil {
 		return nil, fmt.Errorf("credit coins: %w", err)
