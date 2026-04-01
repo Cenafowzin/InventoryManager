@@ -293,6 +293,44 @@ func (h *Handler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, item)
 }
 
+func (h *Handler) TransferItem(w http.ResponseWriter, r *http.Request) {
+	itemID := mustParseUUID(chi.URLParam(r, "itemID"))
+	requesterID, _ := middleware.UserIDFromContext(r.Context())
+	role := middleware.CampaignRoleFromContext(r.Context())
+
+	var body struct {
+		TargetCharacterID uuid.UUID `json:"target_character_id"`
+		Quantity          int       `json:"quantity"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	err := h.itemSvc.TransferItem(r.Context(), itemID, body.TargetCharacterID, requesterID, role, body.Quantity)
+	if errors.Is(err, ErrItemNotFound) {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	if errors.Is(err, ErrForbidden) {
+		writeError(w, http.StatusForbidden, err.Error())
+		return
+	}
+	if errors.Is(err, ErrSameCharacter) {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if errors.Is(err, ErrInsufficientQuantity) {
+		writeError(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 	itemID := mustParseUUID(chi.URLParam(r, "itemID"))
 	requesterID, _ := middleware.UserIDFromContext(r.Context())

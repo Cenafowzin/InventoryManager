@@ -14,6 +14,7 @@ type Character struct {
 	Name              string     `json:"name"`
 	Description       string     `json:"description"`
 	MaxCarryWeightKg  *float64   `json:"max_carry_weight_kg"`
+	IsReserve         bool       `json:"is_reserve"`
 	CreatedAt         time.Time  `json:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at"`
 }

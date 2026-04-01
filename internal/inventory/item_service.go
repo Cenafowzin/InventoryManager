@@ -249,6 +249,34 @@ func (s *ItemService) resolveCoin(ctx context.Context, campaignID uuid.UUID, coi
 	return &def.ID, nil
 }
 
+func (s *ItemService) TransferItem(ctx context.Context, itemID, targetCharID, requesterID uuid.UUID, requesterRole string, quantity int) error {
+	item, err := s.itemRepo.GetItemByID(ctx, itemID)
+	if err != nil {
+		return err
+	}
+	srcChar, err := s.charRepo.GetCharacterByID(ctx, item.CharacterID)
+	if err != nil {
+		return err
+	}
+	if err := checkCharAccess(srcChar, requesterID, requesterRole); err != nil {
+		return err
+	}
+	tgtChar, err := s.charRepo.GetCharacterByID(ctx, targetCharID)
+	if err != nil {
+		return err
+	}
+	if tgtChar.CampaignID != srcChar.CampaignID {
+		return ErrForbidden
+	}
+	if item.CharacterID == targetCharID {
+		return ErrSameCharacter
+	}
+	if quantity <= 0 || quantity > item.Quantity {
+		quantity = item.Quantity
+	}
+	return s.itemRepo.TransferItem(ctx, itemID, targetCharID, quantity)
+}
+
 func checkCharAccess(ch *models.Character, requesterID uuid.UUID, requesterRole string) error {
 	if requesterRole == "gm" {
 		return nil

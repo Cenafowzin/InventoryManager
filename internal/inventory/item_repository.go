@@ -189,3 +189,114 @@ func (r *ItemRepository) DecrementQuantity(ctx context.Context, id uuid.UUID, qt
 	`, qty, id)
 	return err
 }
+
+func (r *ItemRepository) TransferItem(ctx context.Context, sourceItemID, targetCharID uuid.UUID, quantity int) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Lock and read source item
+	var srcCharID uuid.UUID
+	var shopItemID *uuid.UUID
+	var name, description, emoji string
+	var weightKg, value float64
+	var valueCoinID *uuid.UUID
+	var srcQty int
+	err = tx.QueryRow(ctx, `
+		SELECT character_id, shop_item_id, name,
+		       COALESCE(description, ''), COALESCE(emoji, ''),
+		       weight_kg, value, value_coin_id, quantity
+		FROM items WHERE id = $1 FOR UPDATE
+	`, sourceItemID).Scan(
+		&srcCharID, &shopItemID, &name, &description, &emoji,
+		&weightKg, &value, &valueCoinID, &srcQty,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrItemNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("lock source item: %w", err)
+	}
+
+	if srcCharID == targetCharID {
+		return ErrSameCharacter
+	}
+	if srcQty < quantity {
+		return ErrInsufficientQuantity
+	}
+
+	// Read source categories before any modification
+	catRows, err := tx.Query(ctx, `SELECT category_id FROM item_categories WHERE item_id = $1`, sourceItemID)
+	if err != nil {
+		return fmt.Errorf("query source categories: %w", err)
+	}
+	var catIDs []uuid.UUID
+	for catRows.Next() {
+		var catID uuid.UUID
+		if err := catRows.Scan(&catID); err != nil {
+			catRows.Close()
+			return err
+		}
+		catIDs = append(catIDs, catID)
+	}
+	catRows.Close()
+
+	// Decrement or delete source
+	if srcQty == quantity {
+		if _, err = tx.Exec(ctx, `DELETE FROM items WHERE id = $1`, sourceItemID); err != nil {
+			return fmt.Errorf("delete source item: %w", err)
+		}
+	} else {
+		if _, err = tx.Exec(ctx, `UPDATE items SET quantity = quantity - $1, updated_at = NOW() WHERE id = $2`, quantity, sourceItemID); err != nil {
+			return fmt.Errorf("decrement source item: %w", err)
+		}
+	}
+
+	// Get target's default storage space
+	var targetStorageID uuid.UUID
+	err = tx.QueryRow(ctx, `SELECT id FROM storage_spaces WHERE character_id = $1 AND is_default = true LIMIT 1`, targetCharID).Scan(&targetStorageID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("target character has no default storage space")
+	}
+	if err != nil {
+		return fmt.Errorf("get target storage: %w", err)
+	}
+
+	// Try to merge by shop_item_id
+	merged := false
+	if shopItemID != nil {
+		var existingID uuid.UUID
+		mergeErr := tx.QueryRow(ctx, `
+			SELECT id FROM items WHERE character_id = $1 AND shop_item_id = $2 LIMIT 1 FOR UPDATE
+		`, targetCharID, shopItemID).Scan(&existingID)
+		if mergeErr == nil {
+			if _, err = tx.Exec(ctx, `UPDATE items SET quantity = quantity + $1, updated_at = NOW() WHERE id = $2`, quantity, existingID); err != nil {
+				return fmt.Errorf("merge item quantity: %w", err)
+			}
+			merged = true
+		} else if !errors.Is(mergeErr, pgx.ErrNoRows) {
+			return fmt.Errorf("check merge: %w", mergeErr)
+		}
+	}
+
+	if !merged {
+		var newItemID uuid.UUID
+		err = tx.QueryRow(ctx, `
+			INSERT INTO items (character_id, storage_space_id, shop_item_id, name, description, emoji, weight_kg, value, value_coin_id, quantity)
+			VALUES ($1, $2, $3, $4, NULLIF($5, ''), NULLIF($6, ''), $7, $8, $9, $10)
+			RETURNING id
+		`, targetCharID, targetStorageID, shopItemID, name, description, emoji, weightKg, value, valueCoinID, quantity).Scan(&newItemID)
+		if err != nil {
+			return fmt.Errorf("insert transferred item: %w", err)
+		}
+		for _, catID := range catIDs {
+			if _, err = tx.Exec(ctx, `INSERT INTO item_categories (item_id, category_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, newItemID, catID); err != nil {
+				return fmt.Errorf("copy category: %w", err)
+			}
+		}
+	}
+
+	return tx.Commit(ctx)
+}

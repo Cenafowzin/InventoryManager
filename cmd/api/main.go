@@ -149,6 +149,9 @@ func main() {
 				})
 			})
 
+			// GM Reserve
+			r.Get("/reserve", characterHandler.GetReserve)
+
 			// Characters
 			r.Route("/characters", func(r chi.Router) {
 				r.Get("/", characterHandler.List)
@@ -177,6 +180,7 @@ func main() {
 							r.Get("/", inventoryHandler.GetItem)
 							r.Put("/", inventoryHandler.UpdateItem)
 							r.Delete("/", inventoryHandler.DeleteItem)
+							r.Post("/transfer", inventoryHandler.TransferItem)
 						})
 					})
 

@@ -12,4 +12,6 @@ var (
 	ErrInsufficientFunds     = errors.New("insufficient funds")
 	ErrNoConversion          = errors.New("no conversion rate found between these coins")
 	ErrForbidden             = errors.New("forbidden")
+	ErrInsufficientQuantity  = errors.New("transfer quantity exceeds item quantity")
+	ErrSameCharacter         = errors.New("source and target characters must be different")
 )

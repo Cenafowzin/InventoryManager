@@ -76,6 +76,10 @@ func (s *Service) UpdateCharacter(ctx context.Context, characterID, requesterID 
 	return s.repo.UpdateCharacter(ctx, characterID, name, description, maxCarryWeightKg)
 }
 
+func (s *Service) GetCampaignReserve(ctx context.Context, campaignID uuid.UUID) (*models.Character, bool, error) {
+	return s.repo.EnsureCampaignReserve(ctx, campaignID)
+}
+
 func (s *Service) DeleteCharacter(ctx context.Context, characterID, requesterID uuid.UUID, requesterRole string) error {
 	ch, err := s.repo.GetCharacterByID(ctx, characterID)
 	if err != nil {

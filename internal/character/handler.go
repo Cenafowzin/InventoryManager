@@ -139,6 +139,23 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ch)
 }
 
+func (h *Handler) GetReserve(w http.ResponseWriter, r *http.Request) {
+	campaignID := mustParseUUID(chi.URLParam(r, "campaignID"))
+
+	ch, isNew, err := h.svc.GetCampaignReserve(r.Context(), campaignID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if isNew {
+		if err := h.spaceEnsurer.EnsureDefaultSpace(r.Context(), ch.ID); err != nil {
+			writeError(w, http.StatusInternalServerError, "reserve created but failed to initialize storage")
+			return
+		}
+	}
+	writeJSON(w, http.StatusOK, ch)
+}
+
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	charID := mustParseUUID(chi.URLParam(r, "charID"))
 	requesterID, _ := middleware.UserIDFromContext(r.Context())
