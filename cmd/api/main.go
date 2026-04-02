@@ -101,8 +101,13 @@ func main() {
 	txHandler := transaction.NewHandler(txSvc)
 
 	r := chi.NewRouter()
+	allowedOrigins := []string{"http://localhost:5173", "http://localhost:3000"}
+	if origin := getEnv("ALLOWED_ORIGIN", ""); origin != "" {
+		allowedOrigins = append(allowedOrigins, origin)
+	}
+
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "http://localhost:3000"},
+		AllowedOrigins: allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		AllowCredentials: false,
