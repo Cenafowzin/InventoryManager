@@ -75,7 +75,8 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	requesterID, _ := middleware.UserIDFromContext(r.Context())
 	requesterRole := middleware.CampaignRoleFromContext(r.Context())
 
-	chars, err := h.svc.ListCharacters(r.Context(), campaignID, requesterID, requesterRole)
+	all := r.URL.Query().Get("all") == "true"
+	chars, err := h.svc.ListCharacters(r.Context(), campaignID, requesterID, requesterRole, all)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

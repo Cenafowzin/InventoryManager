@@ -152,7 +152,7 @@ func (r *Repository) EnsureCampaignReserve(ctx context.Context, campaignID uuid.
 	// Create reserve character (no owner_user_id)
 	err = r.db.QueryRow(ctx, `
 		INSERT INTO characters (campaign_id, name, description, is_reserve)
-		VALUES ($1, 'Reserva', '', TRUE)
+		VALUES ($1, 'Inventário do GM', '', TRUE)
 		ON CONFLICT DO NOTHING
 		RETURNING id
 	`, campaignID).Scan(&id)

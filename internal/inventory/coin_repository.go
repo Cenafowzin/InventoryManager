@@ -72,9 +72,9 @@ func (r *CoinRepository) SetCoinBalance(ctx context.Context, characterID, coinTy
 func (r *CoinRepository) AddToBalance(ctx context.Context, characterID, coinTypeID uuid.UUID, delta float64) error {
 	_, err := r.db.Exec(ctx, `
 		INSERT INTO coin_purse (character_id, coin_type_id, amount, updated_at)
-		VALUES ($1, $2, GREATEST(0, $3), NOW())
+		VALUES ($1, $2, GREATEST(0, $3::numeric), NOW())
 		ON CONFLICT (character_id, coin_type_id)
-		DO UPDATE SET amount = GREATEST(0, coin_purse.amount + $3), updated_at = NOW()
+		DO UPDATE SET amount = GREATEST(0, coin_purse.amount + $3::numeric), updated_at = NOW()
 	`, characterID, coinTypeID, delta)
 	if err != nil {
 		return fmt.Errorf("add to balance: %w", err)

@@ -223,7 +223,17 @@ func main() {
 				})
 			})
 
-			// Shop
+			// Shops (stores)
+			r.Route("/shops", func(r chi.Router) {
+				r.Get("/", shopHandler.ListShops)
+				r.Post("/", shopHandler.CreateShop)
+				r.Route("/{shopID}", func(r chi.Router) {
+					r.Put("/", shopHandler.UpdateShop)
+					r.Delete("/", shopHandler.DeleteShop)
+				})
+			})
+
+			// Shop items
 			r.Route("/shop", func(r chi.Router) {
 				r.Get("/", shopHandler.ListShopItems)
 				r.Post("/", shopHandler.CreateShopItem)

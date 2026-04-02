@@ -52,8 +52,8 @@ func (s *Service) GetCharacter(ctx context.Context, characterID, requesterID uui
 	return ch, nil
 }
 
-func (s *Service) ListCharacters(ctx context.Context, campaignID, requesterID uuid.UUID, requesterRole string) ([]models.Character, error) {
-	if requesterRole == "gm" {
+func (s *Service) ListCharacters(ctx context.Context, campaignID, requesterID uuid.UUID, requesterRole string, all bool) ([]models.Character, error) {
+	if requesterRole == "gm" || all {
 		return s.repo.ListCharactersByCampaign(ctx, campaignID)
 	}
 	return s.repo.ListCharactersByOwner(ctx, campaignID, requesterID)

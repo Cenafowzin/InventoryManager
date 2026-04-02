@@ -361,6 +361,20 @@ func (r *Repository) ConfirmBuy(
 		}
 	}
 
+	// Decrement stock_quantity for each shop item purchased
+	for _, item := range items {
+		_, err = tx.Exec(ctx, `
+			UPDATE shop_items
+			SET stock_quantity = GREATEST(0, stock_quantity - $1::int),
+			    is_available   = CASE WHEN stock_quantity <= $1::int THEN false ELSE is_available END,
+			    updated_at     = NOW()
+			WHERE id = $2 AND stock_quantity IS NOT NULL
+		`, item.Quantity, item.ShopItemID)
+		if err != nil {
+			return nil, fmt.Errorf("decrement stock: %w", err)
+		}
+	}
+
 	// Debit coins
 	_, err = tx.Exec(ctx, `
 		INSERT INTO coin_purse (character_id, coin_type_id, amount, updated_at)
