@@ -80,7 +80,7 @@ func (s *Service) Register(ctx context.Context, username, email, password string
 }
 
 func (s *Service) Login(ctx context.Context, email, password string) (*TokenPair, error) {
-	user, err := s.repo.GetUserByEmail(ctx, email)
+	user, err := s.repo.GetUserByIdentifier(ctx, email)
 	if err != nil {
 		return nil, ErrInvalidCredentials
 	}

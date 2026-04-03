@@ -48,6 +48,22 @@ func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*models.
 	return &u, nil
 }
 
+func (r *Repository) GetUserByIdentifier(ctx context.Context, identifier string) (*models.User, error) {
+	var u models.User
+	err := r.db.QueryRow(ctx, `
+		SELECT id, username, email, password_hash, created_at
+		FROM users WHERE email = $1 OR username = $1
+		LIMIT 1
+	`, identifier).Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &u.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrInvalidCredentials
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get user by identifier: %w", err)
+	}
+	return &u, nil
+}
+
 func (r *Repository) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	var u models.User
 	err := r.db.QueryRow(ctx, `
