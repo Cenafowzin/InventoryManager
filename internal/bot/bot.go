@@ -24,6 +24,7 @@ type Deps struct {
 	CoinRepo      *inventorypkg.CoinRepository
 	ShopRepo      *shopkg.Repository
 	CoinTypeRepo  *coinpkg.Repository
+	SiteURL       string
 }
 
 // Bot é o cliente Discord do sistema.
@@ -129,6 +130,18 @@ var commandDefs = []*discordgo.ApplicationCommand{
 		Name:        "loja",
 		Description: "Lista os itens disponíveis na loja da campanha",
 	},
+	{
+		Name:        "site",
+		Description: "Mostra o link do site para acessar o sistema",
+	},
+	{
+		Name:        "help",
+		Description: "Lista todos os comandos disponíveis (enviado no privado)",
+	},
+	{
+		Name:        "comecar",
+		Description: "Passo a passo de como criar conta, vincular e usar o bot",
+	},
 }
 
 func (b *Bot) registerCommands() error {
@@ -160,6 +173,12 @@ func (b *Bot) onInteraction(s *discordgo.Session, i *discordgo.InteractionCreate
 			b.handleInventario(s, i)
 		case "loja":
 			b.handleLoja(s, i)
+		case "site":
+			b.handleSite(s, i)
+		case "help":
+			b.handleHelp(s, i)
+		case "comecar":
+			b.handleComecar(s, i)
 		}
 
 	case discordgo.InteractionApplicationCommandAutocomplete:

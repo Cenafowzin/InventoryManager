@@ -411,7 +411,7 @@ func (s *Service) confirmBuy(ctx context.Context, t *models.Transaction) (*model
 			Description: si.Description,
 			Emoji:       si.Emoji,
 			WeightKg:    si.WeightKg,
-			Value:       ti.AdjustedUnitValue,
+			Value:       si.BaseValue,
 			ValueCoinID: &t.TotalCoinID,
 			Quantity:    ti.Quantity,
 			ShopItemID:  *ti.ShopItemID,

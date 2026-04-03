@@ -280,6 +280,7 @@ func main() {
 			CoinRepo:      coinPurseRepo,
 			ShopRepo:      shopRepo,
 			CoinTypeRepo:  coinRepo,
+			SiteURL:       getEnv("SITE_URL", ""),
 		})
 		if err != nil {
 			log.Printf("bot: erro ao criar cliente Discord: %v", err)
