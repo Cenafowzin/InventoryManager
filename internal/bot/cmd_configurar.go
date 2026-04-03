@@ -48,13 +48,13 @@ func (b *Bot) handleConfigurar(s *discordgo.Session, i *discordgo.InteractionCre
 			ephemeral(s, i, "❌ Erro ao salvar configuração.")
 			return
 		}
-		ephemeral(s, i, fmt.Sprintf("✅ Canal vinculado à campanha **%s**.", campaignName))
+		respond(s, i, fmt.Sprintf("✅ Canal vinculado à campanha **%s**.", campaignName))
 	case "servidor":
 		if err := b.deps.CampaignRepo.SetDiscordGuild(ctx, campaignID, i.GuildID); err != nil {
 			ephemeral(s, i, "❌ Erro ao salvar configuração.")
 			return
 		}
-		ephemeral(s, i, fmt.Sprintf("✅ Servidor vinculado à campanha **%s**.", campaignName))
+		respond(s, i, fmt.Sprintf("✅ Servidor vinculado à campanha **%s**.", campaignName))
 	default:
 		ephemeral(s, i, "❌ Modo inválido.")
 	}

@@ -67,5 +67,5 @@ func (b *Bot) handleLoja(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		msg = msg[:1900] + "\n*(lista truncada)*"
 	}
 
-	ephemeral(s, i, msg)
+	respond(s, i, msg)
 }

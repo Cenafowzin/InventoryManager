@@ -53,7 +53,7 @@ func (b *Bot) handleMoedas(s *discordgo.Session, i *discordgo.InteractionCreate)
 		return
 	}
 
-	ephemeral(s, i, fmt.Sprintf("💰 **Carteira de %s**\n%s", char.Name, strings.Join(lines, "\n")))
+	respond(s, i, fmt.Sprintf("💰 **Carteira de %s**\n%s", char.Name, strings.Join(lines, "\n")))
 }
 
 func (b *Bot) autocompletePersonagem(s *discordgo.Session, i *discordgo.InteractionCreate) {

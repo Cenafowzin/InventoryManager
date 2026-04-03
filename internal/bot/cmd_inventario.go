@@ -96,5 +96,5 @@ func (b *Bot) handleInventario(s *discordgo.Session, i *discordgo.InteractionCre
 		msg = msg[:1900] + "\n*(lista truncada)*"
 	}
 
-	ephemeral(s, i, msg)
+	respond(s, i, msg)
 }

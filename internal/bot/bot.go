@@ -193,7 +193,17 @@ func (b *Bot) onInteraction(s *discordgo.Session, i *discordgo.InteractionCreate
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-// ephemeral envia uma resposta visível só para quem chamou o comando.
+// respond envia uma resposta pública no canal (visível a todos, fica no histórico).
+func respond(s *discordgo.Session, i *discordgo.InteractionCreate, msg string) {
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: msg,
+		},
+	})
+}
+
+// ephemeral envia uma resposta visível só para quem chamou (para erros e dados sensíveis).
 func ephemeral(s *discordgo.Session, i *discordgo.InteractionCreate, msg string) {
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,

@@ -28,5 +28,5 @@ func (b *Bot) handleLink(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	ephemeral(s, i, "✅ Conta vinculada com sucesso! Agora você pode usar `/inventario`, `/moedas` e outros comandos.")
+	respond(s, i, fmt.Sprintf("✅ **%s** vinculou a conta ao sistema!", discordUsername(i)))
 }

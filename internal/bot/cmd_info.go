@@ -36,16 +36,7 @@ func (b *Bot) handleHelp(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 ` + "`/help`" + ` — Mostra esta mensagem`
 
-	// Tenta enviar no privado
-	ch, err := s.UserChannelCreate(discordUserID(i))
-	if err == nil {
-		s.ChannelMessageSend(ch.ID, msg)
-		ephemeral(s, i, "📬 Enviei a lista de comandos no seu privado!")
-		return
-	}
-
-	// Se não conseguir abrir DM, responde ephemeral no canal
-	ephemeral(s, i, msg)
+	sendDM(s, i, msg)
 }
 
 // /comecar — passo a passo de como criar conta, vincular e começar a usar
@@ -68,13 +59,17 @@ func (b *Bot) handleComecar(s *discordgo.Session, i *discordgo.InteractionCreate
 		"Use `/personagens`, `/inventario`, `/moedas` e `/loja` para jogar.\n\n" +
 		"💡 Dica: use `/help` para ver todos os comandos."
 
-	// Tenta enviar no privado
+	sendDM(s, i, msg)
+}
+
+// sendDM tenta enviar msg no privado. Se DMs estiverem fechadas, responde ephemeral no canal.
+func sendDM(s *discordgo.Session, i *discordgo.InteractionCreate, msg string) {
 	ch, err := s.UserChannelCreate(discordUserID(i))
 	if err == nil {
-		s.ChannelMessageSend(ch.ID, msg)
-		ephemeral(s, i, "📬 Enviei o guia de início no seu privado!")
-		return
+		if _, err = s.ChannelMessageSend(ch.ID, msg); err == nil {
+			ephemeral(s, i, "📬 Enviei no seu privado!")
+			return
+		}
 	}
-
 	ephemeral(s, i, msg)
 }

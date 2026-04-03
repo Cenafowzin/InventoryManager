@@ -49,6 +49,6 @@ func (b *Bot) handlePersonagens(s *discordgo.Session, i *discordgo.InteractionCr
 		lines = append(lines, line)
 	}
 
-	msg := fmt.Sprintf("**Personagens em %s**\n%s", campaign.Name, strings.Join(lines, "\n"))
-	ephemeral(s, i, msg)
+	msg := fmt.Sprintf("**Personagens de %s em %s**\n%s", discordUsername(i), campaign.Name, strings.Join(lines, "\n"))
+	respond(s, i, msg)
 }
