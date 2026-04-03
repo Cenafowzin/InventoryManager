@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/google/uuid"
+	"github.com/rubendubeux/inventory-manager/pkg/middleware"
 )
 
 type Handler struct {
@@ -17,7 +17,11 @@ func NewHandler(svc *Service) *Handler {
 
 // POST /auth/discord/code — usuário logado gera o código para usar no bot (/link <codigo>)
 func (h *Handler) GenerateCode(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(uuid.UUID)
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "não autorizado")
+		return
+	}
 
 	code, err := h.svc.GenerateLinkCode(r.Context(), userID)
 	if err != nil {
@@ -30,7 +34,11 @@ func (h *Handler) GenerateCode(w http.ResponseWriter, r *http.Request) {
 
 // GET /auth/discord/status — verifica se o usuário logado tem Discord vinculado
 func (h *Handler) Status(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(uuid.UUID)
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "não autorizado")
+		return
+	}
 	linked, err := h.svc.IsLinked(r.Context(), userID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "erro ao verificar")
@@ -41,7 +49,11 @@ func (h *Handler) Status(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /auth/discord/link — remove a vinculação
 func (h *Handler) Unlink(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(uuid.UUID)
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "não autorizado")
+		return
+	}
 	if err := h.svc.Unlink(r.Context(), userID); err != nil {
 		writeError(w, http.StatusInternalServerError, "erro ao desvincular")
 		return
