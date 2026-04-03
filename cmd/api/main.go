@@ -16,11 +16,13 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/rubendubeux/inventory-manager/internal/auth"
+	"github.com/rubendubeux/inventory-manager/internal/bot"
 	"github.com/rubendubeux/inventory-manager/internal/campaign"
 	"github.com/rubendubeux/inventory-manager/internal/category"
 	"github.com/rubendubeux/inventory-manager/internal/character"
 	"github.com/rubendubeux/inventory-manager/internal/coin"
 	"github.com/rubendubeux/inventory-manager/internal/db"
+	discordpkg "github.com/rubendubeux/inventory-manager/internal/discord"
 	"github.com/rubendubeux/inventory-manager/internal/inventory"
 	"github.com/rubendubeux/inventory-manager/internal/shop"
 	"github.com/rubendubeux/inventory-manager/internal/transaction"
@@ -94,6 +96,11 @@ func main() {
 	shopSvc := shop.NewService(shopRepo, categorySvc, coinSvc)
 	shopHandler := shop.NewHandler(shopSvc)
 
+	// Discord
+	discordRepo := discordpkg.NewRepository(pool)
+	discordSvc := discordpkg.NewService(discordRepo)
+	discordHandler := discordpkg.NewHandler(discordSvc)
+
 	// Transaction
 	txRepo := transaction.NewRepository(pool)
 	txCoinAdapter := &txCoinAdapter{repo: coinPurseRepo}
@@ -124,6 +131,9 @@ func main() {
 
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.Authenticate(jwtSecret))
+		r.Post("/auth/discord/code", discordHandler.GenerateCode)
+		r.Get("/auth/discord/status", discordHandler.Status)
+		r.Delete("/auth/discord/link", discordHandler.Unlink)
 
 		r.Post("/campaigns", campaignHandler.Create)
 		r.Get("/campaigns", campaignHandler.List)
@@ -258,6 +268,30 @@ func main() {
 			})
 		})
 	})
+
+	// Discord bot (opcional — só sobe se DISCORD_TOKEN estiver configurado)
+	if discordToken := getEnv("DISCORD_TOKEN", ""); discordToken != "" {
+		b, err := bot.New(discordToken, getEnv("DISCORD_GUILD_ID", ""), bot.Deps{
+			DiscordSvc:    discordSvc,
+			CampaignRepo:  campaignRepo,
+			CharacterRepo: characterRepo,
+			ItemRepo:      itemRepo,
+			StorageRepo:   storageRepo,
+			CoinRepo:      coinPurseRepo,
+			ShopRepo:      shopRepo,
+			CoinTypeRepo:  coinRepo,
+		})
+		if err != nil {
+			log.Printf("bot: erro ao criar cliente Discord: %v", err)
+		} else {
+			go func() {
+				if err := b.Start(); err != nil {
+					log.Printf("bot: erro ao iniciar: %v", err)
+				}
+			}()
+			defer b.Stop()
+		}
+	}
 
 	log.Printf("server listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, r); err != nil {

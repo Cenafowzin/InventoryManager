@@ -268,3 +268,70 @@ func (r *Repository) MarkInviteUsed(ctx context.Context, inviteID, userID uuid.U
 	`, userID, inviteID)
 	return err
 }
+
+// ── Discord ───────────────────────────────────────────────────────────────────
+
+func (r *Repository) GetByDiscordChannel(ctx context.Context, channelID string) (*models.Campaign, error) {
+	var c models.Campaign
+	err := r.db.QueryRow(ctx, `
+		SELECT id, name, description, creator_user_id, discord_channel_id, discord_guild_id, created_at, updated_at
+		FROM campaigns WHERE discord_channel_id = $1
+	`, channelID).Scan(&c.ID, &c.Name, &c.Description, &c.CreatorUserID,
+		&c.DiscordChannelID, &c.DiscordGuildID, &c.CreatedAt, &c.UpdatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	return &c, err
+}
+
+func (r *Repository) GetByDiscordGuild(ctx context.Context, guildID string) (*models.Campaign, error) {
+	var c models.Campaign
+	err := r.db.QueryRow(ctx, `
+		SELECT id, name, description, creator_user_id, discord_channel_id, discord_guild_id, created_at, updated_at
+		FROM campaigns WHERE discord_guild_id = $1
+	`, guildID).Scan(&c.ID, &c.Name, &c.Description, &c.CreatorUserID,
+		&c.DiscordChannelID, &c.DiscordGuildID, &c.CreatedAt, &c.UpdatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	return &c, err
+}
+
+func (r *Repository) SetDiscordChannel(ctx context.Context, campaignID uuid.UUID, channelID string) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE campaigns SET discord_channel_id = $1, updated_at = NOW() WHERE id = $2
+	`, channelID, campaignID)
+	return err
+}
+
+func (r *Repository) SetDiscordGuild(ctx context.Context, campaignID uuid.UUID, guildID string) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE campaigns SET discord_guild_id = $1, updated_at = NOW() WHERE id = $2
+	`, guildID, campaignID)
+	return err
+}
+
+func (r *Repository) ListCampaignsAsGM(ctx context.Context, userID uuid.UUID) ([]models.Campaign, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT c.id, c.name, c.description, c.creator_user_id, c.discord_channel_id, c.discord_guild_id, c.created_at, c.updated_at
+		FROM campaigns c
+		JOIN campaign_members cm ON cm.campaign_id = c.id
+		WHERE cm.user_id = $1 AND cm.role = 'gm'
+		ORDER BY c.name
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var campaigns []models.Campaign
+	for rows.Next() {
+		var c models.Campaign
+		if err := rows.Scan(&c.ID, &c.Name, &c.Description, &c.CreatorUserID,
+			&c.DiscordChannelID, &c.DiscordGuildID, &c.CreatedAt, &c.UpdatedAt); err != nil {
+			return nil, err
+		}
+		campaigns = append(campaigns, c)
+	}
+	return campaigns, rows.Err()
+}

@@ -7,12 +7,14 @@ import (
 )
 
 type Campaign struct {
-	ID            uuid.UUID `json:"id"`
-	Name          string    `json:"name"`
-	Description   string    `json:"description"`
-	CreatorUserID uuid.UUID `json:"creator_user_id"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	ID                uuid.UUID `json:"id"`
+	Name              string    `json:"name"`
+	Description       string    `json:"description"`
+	CreatorUserID     uuid.UUID `json:"creator_user_id"`
+	DiscordChannelID  *string   `json:"discord_channel_id,omitempty"`
+	DiscordGuildID    *string   `json:"discord_guild_id,omitempty"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 type CampaignInvite struct {
